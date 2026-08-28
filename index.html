@@ -1,391 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ASA Logistics Inventory Dashboard</title>
-  <!-- Tailwind CSS & FontAwesome -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --asa-orange: #d96800;
-      --asa-orange-dark: #b85400;
-      --asa-sidebar-active: #b55300;
-    }
-    .bg-asa-orange { background-color: var(--asa-orange); }
-    .bg-asa-active { background-color: var(--asa-sidebar-active); }
-    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f1f5f9; }
-  </style>
+<meta charset="UTF-8">
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASA Logistics Inventory</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9}.nav-btn{cursor:pointer}.hidden-view{display:none!important}
+</style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-800">
-
-  <!-- SIDEBAR -->
-  <aside class="w-64 bg-asa-orange text-white flex flex-col flex-shrink-0 shadow-lg justify-between">
-    <div>
-      <!-- Brand / Logo Area -->
-      <div class="p-6 flex flex-col items-center border-b border-orange-400/30">
-        <div class="bg-white rounded-full p-2 w-20 h-20 flex items-center justify-center shadow-md mb-2">
-          <i class="fa-solid fa-sun text-yellow-500 text-3xl"></i>
-        </div>
-        <div class="text-center font-bold tracking-wider text-sm mt-1 uppercase leading-tight">
-          Logistics<br><span class="text-orange-100 font-light">Inventory</span>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <nav class="mt-4 px-3 space-y-1">
-        <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-asa-active font-medium shadow-sm">
-          <i class="fa-solid fa-gauge-high"></i> Dashboard
-        </a>
-        <a href="#" onclick="switchTab('inventory')" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-600/50 font-medium text-orange-100 transition">
-          <i class="fa-solid fa-boxes-stacked"></i> Inventory
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-600/50 font-medium text-orange-100 transition">
-          <i class="fa-solid fa-folder"></i> Division Budget
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-600/50 font-medium text-orange-100 transition">
-          <i class="fa-solid fa-print"></i> Gate Pass
-        </a>
-        <a href="#" class="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-orange-600/50 font-medium text-orange-100 transition">
-          <span class="flex items-center gap-3"><i class="fa-solid fa-arrow-down"></i> Incoming</span>
-          <i class="fa-solid fa-lock text-xs opacity-70"></i>
-        </a>
-        <a href="#" class="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-orange-600/50 font-medium text-orange-100 transition">
-          <span class="flex items-center gap-3"><i class="fa-solid fa-arrow-up"></i> Outgoing</span>
-          <i class="fa-solid fa-lock text-xs opacity-70"></i>
-        </a>
-      </nav>
-    </div>
-
-    <!-- User / Guest Mode -->
-    <div class="p-4">
-      <div class="bg-white/20 hover:bg-white/30 text-white rounded-xl py-2 px-3 text-center text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition">
-        <i class="fa-solid fa-user"></i> Guest Mode
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN CONTENT AREA -->
-  <main class="flex-1 flex flex-col overflow-y-auto bg-slate-50">
-    <!-- Header -->
-    <header class="bg-white border-b px-8 py-5 flex items-center justify-between sticky top-0 z-10">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">Inventory Dashboard</h1>
-        <p class="text-xs text-slate-500 mt-0.5">Live physical stock balance and transaction overview</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <button onclick="openModal('INCOMING')" class="flex items-center gap-2 border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm">
-          <i class="fa-solid fa-plus"></i> Add Incoming
-        </button>
-        <button onclick="openModal('OUTGOING')" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm">
-          <i class="fa-solid fa-paper-plane"></i> Add Outgoing
-        </button>
-      </div>
-    </header>
-
-    <div class="p-8 space-y-6 max-w-7xl w-full">
-      <!-- TOP SECTION: CHART & INVENTORY SUMMARY -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Monthly Transactions Chart Card -->
-        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-slate-800">Monthly Transactions</h2>
-            <select id="materialFilter" onchange="filterChart()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="ALL">All Materials</option>
-            </select>
-          </div>
-          <!-- Chart Container -->
-          <div class="relative h-72">
-            <canvas id="transactionChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Inventory Summary Card -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-bold text-slate-800">Inventory Summary</h2>
-              <a href="#" onclick="switchTab('inventory')" class="text-xs font-semibold text-blue-600 hover:underline">View All</a>
-            </div>
-
-            <div class="grid grid-cols-2 text-xs font-semibold text-slate-400 uppercase tracking-wider pb-2 border-b">
-              <span>Material</span>
-              <span class="text-right">Stock</span>
-            </div>
-
-            <div id="summaryList" class="divide-y divide-slate-100 text-sm max-h-72 overflow-y-auto pr-1">
-              <div class="py-4 text-center text-slate-400 text-xs">Loading summary...</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- BOTTOM SECTION: RECENT TRANSACTIONS TABLE -->
-      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-base font-bold text-slate-800 mb-4">Recent Transactions</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 text-slate-400 uppercase font-semibold">
-              <tr>
-                <th class="p-3">Type</th>
-                <th class="p-3">Date</th>
-                <th class="p-3">Item</th>
-                <th class="p-3 text-right">Qty</th>
-                <th class="p-3">Source / Destination</th>
-              </tr>
-            </thead>
-            <tbody id="transactionsTable" class="divide-y divide-slate-100">
-              <tr><td colspan="5" class="text-center py-4 text-slate-400">Loading recent transactions...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- MODAL: ADD TRANSACTION -->
-  <div id="transactionModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-      <div class="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-        <h3 id="modalTitle" class="font-bold text-slate-800">Add Entry</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <form id="transForm" onsubmit="submitTransaction(event)" class="p-6 space-y-4 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Date</label>
-          <input type="date" id="formDate" required class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Item Code / SKU</label>
-          <input type="text" id="formCode" placeholder="e.g. MAT-001" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Item Name</label>
-          <input type="text" id="formName" required placeholder="e.g. Financial Agreement Form" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Quantity</label>
-            <input type="number" id="formQty" required min="1" step="any" placeholder="0" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Unit</label>
-            <input type="text" id="formUnit" placeholder="pcs / box / ream" value="pcs" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-          </div>
-        </div>
-        <div>
-          <label id="contactLabel" class="block font-semibold text-slate-600 mb-1">Supplier / Recipient</label>
-          <input type="text" id="formContact" placeholder="Name or Branch" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Remarks</label>
-          <input type="text" id="formRemarks" placeholder="Optional notes" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500">
-        </div>
-
-        <div class="flex justify-end gap-3 pt-3">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-xl font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
-          <button type="submit" id="submitBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow">Save Transaction</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- SCRIPT LOGIC -->
-  <script>
-    let globalData = null;
-    let chartInstance = null;
-    let currentModalType = 'INCOMING';
-
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('formDate').value = new Date().toISOString().split('T')[0];
-      loadDashboard();
-    });
-
-    function loadDashboard() {
-      google.script.run
-        .withSuccessHandler(renderDashboard)
-        .withFailureHandler(err => alert('Failed to load data: ' + err.message))
-        .getDashboardData();
-    }
-
-    function renderDashboard(data) {
-      globalData = data;
-
-      // Populate Material Filter
-      const select = document.getElementById('materialFilter');
-      select.innerHTML = '<option value="ALL">All Materials</option>';
-      data.materials.forEach(mat => {
-        select.innerHTML += `<option value="${mat}">${mat}</option>`;
-      });
-
-      // Render Summary List
-      const summaryList = document.getElementById('summaryList');
-      if (data.inventoryList.length === 0) {
-        summaryList.innerHTML = '<div class="py-4 text-center text-slate-400 text-xs">No inventory items found.</div>';
-      } else {
-        summaryList.innerHTML = data.inventoryList.map(item => `
-          <div class="py-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-slate-700">${item.name}</span>
-              ${item.isLow ? '<span class="bg-amber-100 text-amber-600 font-bold px-1.5 py-0.5 rounded text-[10px]">Low</span>' : ''}
-            </div>
-            <div class="font-bold ${item.stock < 0 ? 'text-red-500' : 'text-slate-800'}">
-              ${item.stock.toLocaleString()}
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Render Recent Transactions
-      const tbody = document.getElementById('transactionsTable');
-      if (data.recentTransactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-400">No transactions recorded yet.</td></tr>';
-      } else {
-        tbody.innerHTML = data.recentTransactions.map(t => `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-semibold ${t.type === 'Incoming' ? 'text-emerald-600' : 'text-blue-600'}">${t.type}</td>
-            <td class="p-3 text-slate-500">${t.date}</td>
-            <td class="p-3 font-medium text-slate-800">${t.item}</td>
-            <td class="p-3 text-right font-bold">${t.qty.toLocaleString()}</td>
-            <td class="p-3 text-slate-500">${t.ref}</td>
-          </tr>
-        `).join('');
-      }
-
-      // Render Chart
-      buildChart('ALL');
-    }
-
-    function buildChart(filterMaterial) {
-      const ctx = document.getElementById('transactionChart').getContext('2d');
-      const monthlyData = globalData.monthlyData || {};
-
-      const months = ['Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26', 'Jul 26', 'Aug 26'];
-      const incomingUnits = [];
-      const outgoingUnits = [];
-
-      months.forEach(m => {
-        let inTotal = 0;
-        let outTotal = 0;
-        if (monthlyData[m]) {
-          if (filterMaterial === 'ALL') {
-            Object.values(monthlyData[m]).forEach(v => {
-              inTotal += v.in || 0;
-              outTotal += v.out || 0;
-            });
-          } else if (monthlyData[m][filterMaterial]) {
-            inTotal = monthlyData[m][filterMaterial].in || 0;
-            outTotal = monthlyData[m][filterMaterial].out || 0;
-          }
-        }
-        incomingUnits.push(inTotal);
-        outgoingUnits.push(outTotal);
-      });
-
-      if (chartInstance) chartInstance.destroy();
-
-      chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: months,
-          datasets: [
-            {
-              label: 'Incoming Units',
-              data: incomingUnits,
-              backgroundColor: '#10b981',
-              borderRadius: 4
-            },
-            {
-              label: 'Outgoing Units',
-              data: outgoingUnits,
-              backgroundColor: '#2563eb',
-              borderRadius: 4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'top',
-              align: 'center',
-              labels: { boxWidth: 12, usePointStyle: true }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: '#f1f5f9' },
-              ticks: {
-                callback: function(value) { return value.toLocaleString(); }
-              }
-            },
-            x: {
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    }
-
-    function filterChart() {
-      const selected = document.getElementById('materialFilter').value;
-      buildChart(selected);
-    }
-
-    function openModal(type) {
-      currentModalType = type;
-      document.getElementById('modalTitle').innerText = type === 'INCOMING' ? '+ Add Incoming Entry' : '↗ Add Outgoing Entry';
-      document.getElementById('contactLabel').innerText = type === 'INCOMING' ? 'Supplier / Source' : 'Recipient / Destination';
-      document.getElementById('transactionModal').classList.remove('hidden');
-      document.getElementById('transactionModal').classList.add('flex');
-    }
-
-    function closeModal() {
-      document.getElementById('transactionModal').classList.add('hidden');
-      document.getElementById('transactionModal').classList.remove('flex');
-      document.getElementById('transForm').reset();
-    }
-
-    function submitTransaction(e) {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.innerText = 'Saving...';
-
-      const formObj = {
-        date: document.getElementById('formDate').value,
-        code: document.getElementById('formCode').value,
-        name: document.getElementById('formName').value,
-        qty: document.getElementById('formQty').value,
-        unit: document.getElementById('formUnit').value,
-        contact: document.getElementById('formContact').value,
-        remarks: document.getElementById('formRemarks').value
-      };
-
-      google.script.run
-        .withSuccessHandler(res => {
-          btn.disabled = false;
-          btn.innerText = 'Save Transaction';
-          closeModal();
-          loadDashboard();
-        })
-        .withFailureHandler(err => {
-          alert('Error: ' + err.message);
-          btn.disabled = false;
-          btn.innerText = 'Save Transaction';
-        })
-        .recordTransaction(currentModalType, formObj);
-    }
-
-    function switchTab(tab) {
-      // Future expansion for full page tabs
-    }
-  </script>
-</body>
-</html>
+<body class="h-screen overflow-hidden text-slate-800">
+<!-- LOGIN -->
+<div id="loginView" class="h-screen flex items-center justify-center bg-slate-100 p-4">
+ <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
+  <div class="text-center mb-7"><div class="mx-auto w-16 h-16 rounded-full bg-orange-600 text-white flex items-center justify-center text-2xl"><i class="fa-solid fa-boxes-stacked"></i></div><h1 class="text-2xl font-bold mt-4">ASA Logistics</h1><p class="text-sm text-slate-500">Inventory Management System</p></div>
+  <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+   <input id="username" required autocomplete="username" class="w-full border rounded-xl px-4 py-3" placeholder="Username">
+   <input id="password" required type="password" autocomplete="current-password" class="w-full border rounded-xl px-4 py-3" placeholder="Password">
+   <button id="loginBtn" class="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-xl py-3 font-semibold">Sign In</button>
+   <p id="loginError" class="hidden text-sm text-red-600 text-center"></p>
+  </form>
+  <p class="text-xs text-center text-slate-400 mt-5">Default administrator: admin / admin123</p>
+ </div>
+</div>
+<!-- APP -->
+<div id="appView" class="hidden-view h-screen flex">
+ <aside class="w-64 bg-orange-600 text-white flex flex-col flex-shrink-0">
+  <div class="p-6 text-center border-b border-orange-400"><div class="text-3xl"><i class="fa-solid fa-boxes-stacked"></i></div><div class="font-bold mt-2">LOGISTICS INVENTORY</div><div id="userRole" class="text-xs text-orange-100"></div></div>
+  <nav class="p-3 space-y-1 flex-1">
+   <button class="nav-btn w-full text-left px-4 py-3 rounded-xl bg-orange-800" onclick="switchTab('dashboard',this)"><i class="fa-solid fa-gauge mr-3"></i>Dashboard</button>
+   <button class="nav-btn w-full text-left px-4 py-3 rounded-xl hover:bg-orange-700" onclick="switchTab('inventory',this)"><i class="fa-solid fa-boxes-stacked mr-3"></i>Inventory</button>
+   <button class="nav-btn w-full text-left px-4 py-3 rounded-xl hover:bg-orange-700" onclick="switchTab('incoming',this)"><i class="fa-solid fa-arrow-down mr-3"></i>Incoming</button>
+   <button class="nav-btn w-full text-left px-4 py-3 rounded-xl hover:bg-orange-700" onclick="switchTab('outgoing',this)"><i class="fa-solid fa-arrow-up mr-3"></i>Outgoing</button>
+   <button id="adminNav" class="nav-btn w-full text-left px-4 py-3 rounded-xl hover:bg-orange-700" onclick="openAdmin()"><i class="fa-solid fa-users-gear mr-3"></i>Administration</button>
+  </nav>
+  <div class="p-4 border-t border-orange-400"><div class="text-sm font-semibold" id="userName"></div><button onclick="logout()" class="w-full mt-2 bg-white/20 hover:bg-white/30 rounded-lg py-2 text-sm"><i class="fa-solid fa-right-from-bracket mr-2"></i>Logout</button></div>
+ </aside>
+ <main class="flex-1 overflow-y-auto">
+  <header class="bg-white border-b px-8 py-5 flex justify-between items-center sticky top-0 z-10"><div><h1 id="pageTitle" class="text-2xl font-bold">Dashboard</h1><p class="text-xs text-slate-500">ASA Logistics Inventory Management</p></div><div id="status" class="text-xs text-slate-400"></div></header>
+  <section id="dashboard" class="p-8"><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm"><h2 class="font-bold mb-4">Monthly Transactions</h2><div class="h-72"><canvas id="transactionChart"></canvas></div></div><div class="bg-white p-6 rounded-2xl shadow-sm"><h2 class="font-bold mb-4">Inventory Summary</h2><div id="summaryList">Loading...</div></div></div><div class="bg-white p-6 rounded-2xl shadow-sm mt-6"><h2 class="font-bold mb-4">Recent Transactions</h2><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left border-b"><th class="p-3">Type</th><th class="p-3">Date</th><th class="p-3">Item</th><th class="p-3">Qty</th><th class="p-3">Reference</th></tr></thead><tbody id="transactionsTable"><tr><td colspan="5" class="p-5 text-center">Loading...</td></tr></tbody></table></div></div></section>
+  <section id="inventory" class="hidden-view p-8"><div class="bg-white rounded-2xl shadow-sm p-6"><h2 class="text-xl font-bold">Inventory</h2><p class="text-sm text-slate-500 mt-1">Inventory module</p><div id="inventoryContent" class="mt-6">Select Inventory to load current stock.</div></div></section>
+  <section id="incoming" class="hidden-view p-8"><div class="bg-white rounded-2xl shadow-sm p-6"><h2 class="text-xl font-bold">Incoming</h2><div id="incomingContent" class="mt-6">Incoming transactions</div></div></section>
+  <section id="outgoing" class="hidden-view p-8"><div class="bg-white rounded-2xl shadow-sm p-6"><h2 class="text-xl font-bold">Outgoing</h2><div id="outgoingContent" class="mt-6">Outgoing transactions</div></div></section>
+ </main>
+</div>
+<script>
+let sessionToken=localStorage.getItem('asa_session')||'';let currentUser=null;let chart=null;
+function run(name,...args){return new Promise((resolve,reject)=>{if(!window.google||!google.script||!google.script.run)return reject(new Error('Google Apps Script bridge is unavailable.'));google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[name](...args)})}
+window.addEventListener('DOMContentLoaded',()=>{if(sessionToken)restoreSession();else showLogin()});
+async function restoreSession(){try{const r=await run('validateSession',sessionToken);if(r&&r.success){currentUser=r.user;showApp();}else{localStorage.removeItem('asa_session');showLogin()}}catch(e){showLogin()}}
+function showLogin(){document.getElementById('loginView').classList.remove('hidden-view');document.getElementById('appView').classList.add('hidden-view')}
+function showApp(){document.getElementById('loginView').classList.add('hidden-view');document.getElementById('appView').classList.remove('hidden-view');document.getElementById('userName').textContent=currentUser.fullName||currentUser.username;document.getElementById('userRole').textContent=currentUser.role||'';document.getElementById('adminNav').style.display=(String(currentUser.role).toUpperCase()==='ADMIN')?'block':'none';loadDashboard()}
+async function handleLogin(e){e.preventDefault();const btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');btn.disabled=true;btn.textContent='Signing in...';err.classList.add('hidden');try{const r=await run('loginUser',document.getElementById('username').value,document.getElementById('password').value);if(r.success){sessionToken=r.token;currentUser=r.user;localStorage.setItem('asa_session',sessionToken);showApp()}else{err.textContent=r.message||'Login failed.';err.classList.remove('hidden')}}catch(x){err.textContent=x.message||String(x);err.classList.remove('hidden')}finally{btn.disabled=false;btn.textContent='Sign In'}}
+async function logout(){try{await run('logoutUser',sessionToken)}catch(e){}localStorage.removeItem('asa_session');sessionToken='';currentUser=null;showLogin()}
+function switchTab(id,el){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden-view'));const target=document.getElementById(id);if(target)target.classList.remove('hidden-view');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('bg-orange-800'));if(el)el.classList.add('bg-orange-800');document.getElementById('pageTitle').textContent=id.charAt(0).toUpperCase()+id.slice(1);if(id==='dashboard')loadDashboard()}
+function openAdmin(){if(String(currentUser.role).toUpperCase()!=='ADMIN')return;window.open('<?= ScriptApp.getService().getUrl() ?>?page=admin','_blank')}
+async function loadDashboard(){document.getElementById('status').textContent='Loading...';try{const d=await run('getDashboardData');renderDashboard(d);document.getElementById('status').textContent='Updated'}catch(e){document.getElementById('status').textContent='Data error';document.getElementById('summaryList').innerHTML='<p class="text-red-600 text-sm">'+escapeHtml(e.message||String(e))+'</p>';document.getElementById('transactionsTable').innerHTML='<tr><td colspan="5" class="p-5 text-center text-red-600">Failed to load data.</td></tr>'}}
+function renderDashboard(d){d=d||{};const list=d.inventoryList||d.inventorySummary||[];document.getElementById('summaryList').innerHTML=list.length?list.map(x=>'<div class="flex justify-between py-3 border-b"><span>'+escapeHtml(x.name||x.material||'Item')+'</span><b>'+Number(x.stock||0).toLocaleString()+'</b></div>').join(''):'<p class="text-sm text-slate-400">No inventory data.</p>';const tx=d.recentTransactions||[];document.getElementById('transactionsTable').innerHTML=tx.length?tx.map(x=>'<tr class="border-b"><td class="p-3">'+escapeHtml(x.type||'')+'</td><td class="p-3">'+escapeHtml(x.date||'')+'</td><td class="p-3">'+escapeHtml(x.item||x.name||'')+'</td><td class="p-3">'+Number(x.qty||0).toLocaleString()+'</td><td class="p-3">'+escapeHtml(x.ref||'')+'</td></tr>').join(''):'<tr><td colspan="5" class="p-5 text-center text-slate-400">No transactions.</td></tr>';buildChart(d.monthlyData||d.monthlyIncoming||{},d.monthlyOutgoing||{})}
+function buildChart(md,mo){const c=document.getElementById('transactionChart');if(!c||typeof Chart==='undefined')return;if(chart)chart.destroy();const labels=['Jan 26','Feb 26','Mar 26','Apr 26','May 26','Jun 26','Jul 26','Aug 26'];const inc=labels.map(m=>monthTotal(md[m]));const out=labels.map(m=>monthTotal(mo[m]));chart=new Chart(c,{type:'bar',data:{labels,datasets:[{label:'Incoming',data:inc},{label:'Outgoing',data:out}]},options:{responsive:true,maintainAspectRatio:false}})}
+function monthTotal(x){if(typeof x==='number')return x;if(!x)return 0;if(typeof x==='object')return Object.values(x).reduce((a,v)=>a+(typeof v==='number'?v:Number(v?.in||0)+Number(v?.out||0)),0);return Number(x)||0}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+</script>
+</body></html>
