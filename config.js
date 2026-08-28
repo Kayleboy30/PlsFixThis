@@ -1,11 +1,22 @@
-
 /**
  * Global Configuration & 13 Tracked Materials
+ *
+ * The project has existed with both the newer Incoming/Outgoing sheet names
+ * and the original IncDB/OutDB names. Keep the canonical names here while
+ * allowing the data handlers to fall back to the legacy sheets.
  */
 const SHEET_NAMES = {
   INCOMING: 'Incoming',
   OUTGOING: 'Outgoing',
-  INVENTORY: 'Inventory'
+  INVENTORY: 'Inventory',
+  DATABASE: 'Database',
+  USERS: 'Users',
+  DIVISION_BUDGET: 'Division Budget',
+
+  // Legacy sheet names used by the original inventory system.
+  LEGACY_INCOMING: 'IncDB',
+  LEGACY_OUTGOING: 'OutDB',
+  LEGACY_INVENTORY: 'Stock Balance'
 };
 
 const MATERIAL_COLUMNS = [
@@ -31,4 +42,18 @@ function formatDateMonth(d) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const yr = String(date.getFullYear()).slice(-2);
   return `${months[date.getMonth()]} ${yr}`;
+}
+
+/**
+ * Return the first existing sheet from the supplied names.
+ * This keeps the application compatible with both the current and legacy
+ * spreadsheet layouts without requiring the user to rename existing data.
+ */
+function getSheetByNames_(ss, names) {
+  for (const name of names) {
+    if (!name) continue;
+    const sheet = ss.getSheetByName(name);
+    if (sheet) return sheet;
+  }
+  return null;
 }
