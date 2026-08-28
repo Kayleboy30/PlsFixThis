@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>ASA Logistics - Administration</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  >
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f8fafc;
+    }
+
+    .modal-bg {
+      background: rgba(15, 23, 42, 0.55);
+    }
+
+    .role-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 999px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+
+
+<body class="min-h-screen text-slate-800">
+
+  <!-- HEADER -->
+  <header class="bg-orange-600 text-white shadow-lg">
+
+    <div class="max-w-7xl mx-auto px-6 py-4">
+
+      <div class="flex items-center justify-between">
+
+        <div class="flex items-center gap-3">
+
+          <div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+
+            <i class="fa-solid fa-shield-halved text-xl"></i>
+
+          </div>
+
+          <div>
+
+            <h1 class="font-bold text-lg">
+              ASA Logistics
+            </h1>
+
+            <p class="text-xs text-orange-100">
+              Administration
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="text-right">
+
+          <p id="loggedUserName" class="font-semibold text-sm">
+            Administrator
+          </p>
+
+          <p id="loggedUserRole" class="text-xs text-orange-100">
+            ADMIN
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- MAIN -->
+  <main class="max-w-7xl mx-auto px-6 py-6">
+
+
+    <!-- PAGE HEADER -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+
+      <div>
+
+        <h2 class="text-2xl font-bold">
+          User Management
+        </h2>
+
+        <p class="text-sm text-slate-500 mt-1">
+          Manage system users, roles and account access.
+        </p>
+
+      </div>
+
+
+      <button
+        onclick="openAddUserModal()"
+        class="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-semibold shadow-sm transition">
+
+        <i class="fa-solid fa-user-plus mr-2"></i>
+
+        Add User
+
+      </button>
+
+    </div>
+
+
+    <!-- STATISTICS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+
+
+      <!-- TOTAL -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+
+        <div class="flex items-center justify-between">
+
+          <div>
+
+            <p class="text-sm text-slate-500">
+              Users Created
+            </p>
+
+            <p
+              id="usersTotal"
+              class="text-3xl font-bold mt-1">
+              0
+            </p>
+
+          </div>
+
+          <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+
+            <i class="fa-solid fa-users text-orange-600 text-xl"></i>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ACTIVE -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+
+        <div class="flex items-center justify-between">
+
+          <div>
+
+            <p class="text-sm text-slate-500">
+              Active Users
+            </p>
+
+            <p
+              id="usersActive"
+              class="text-3xl font-bold text-green-600 mt-1">
+              0
+            </p>
+
+          </div>
+
+          <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+
+            <i class="fa-solid fa-user-check text-green-600 text-xl"></i>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- DISABLED -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+
+        <div class="flex items-center justify-between">
+
+          <div>
+
+            <p class="text-sm text-slate-500">
+              Disabled Users
+            </p>
+
+            <p
+              id="usersDisabled"
+              class="text-3xl font-bold text-red-600 mt-1">
+              0
+            </p>
+
+          </div>
+
+          <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+
+            <i class="fa-solid fa-user-slash text-red-600 text-xl"></i>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- USER TABLE -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+
+        <div>
+
+          <h3 class="font-bold">
+            System Users
+          </h3>
+
+          <p class="text-xs text-slate-500">
+            Accounts currently registered in the system.
+          </p>
+
+        </div>
+
+
+        <button
+          onclick="loadUsers()"
+          class="w-9 h-9 rounded-lg hover:bg-slate-100 text-slate-500">
+
+          <i class="fa-solid fa-rotate"></i>
+
+        </button>
+
+      </div>
+
+
+      <div class="overflow-x-auto">
+
+        <table class="w-full">
+
+          <thead class="bg-slate-50 border-b border-slate-200">
+
+            <tr>
+
+              <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">
+                Username
+              </th>
+
+              <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">
+                Name
+              </th>
+
+              <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">
+                Role
+              </th>
+
+              <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">
+                Status
+              </th>
+
+              <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">
+                Last Login
+              </th>
+
+              <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-500">
+                Actions
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="usersTable">
+
+            <tr>
+
+              <td
+                colspan="6"
+                class="px-6 py-12 text-center text-slate-400">
+
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+
+                Loading users...
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+
+  <!-- ADD / EDIT USER MODAL -->
+  <div
+    id="userModal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
+
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+
+
+      <!-- MODAL HEADER -->
+      <div class="px-6 py-4 bg-orange-600 text-white flex items-center justify-between">
+
+        <div>
+
+          <h3 id="modalTitle" class="font-bold text-lg">
+            Add User
+          </h3>
+
+          <p class="text-xs text-orange-100">
+            Create or update a system account.
+          </p>
+
+        </div>
+
+
+        <button
+          onclick="closeUserModal()"
+          class="w-9 h-9 rounded-lg hover:bg-white/20">
+
+          <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+      </div>
+
+
+      <!-- FORM -->
+      <div class="p-6 space-y-4">
+
+
+        <!-- USERNAME -->
+        <div>
+
+          <label class="block text-sm font-semibold mb-1">
+            Username
+          </label>
+
+          <input
+            id="userUsername"
+            type="text"
+            autocomplete="off"
+            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Enter username">
+
+        </div>
+
+
+        <!-- NAME -->
+        <div>
+
+          <label class="block text-sm font-semibold mb-1">
+            Full Name
+          </label>
+
+          <input
+            id="userName"
+            type="text"
+            autocomplete="off"
+            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Enter full name">
+
+        </div>
+
+
+        <!-- ROLE -->
+        <div>
+
+          <label class="block text-sm font-semibold mb-1">
+            Role
+          </label>
+
+          <select
+            id="userRole"
+            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+
+            <option value="ADMIN">
+              ADMIN
+            </option>
+
+            <option value="MANAGER">
+              MANAGER
+            </option>
+
+            <option value="ENCODER">
+              ENCODER
+            </option>
+
+            <option value="VIEWER">
+              VIEWER
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- PASSWORD -->
+        <div>
+
+          <label class="block text-sm font-semibold mb-1">
+
+            Password
+
+            <span
+              id="passwordHint"
+              class="text-xs text-slate-400 font-normal">
+              (required)
+            </span>
+
+          </label>
+
+          <input
+            id="userPassword"
+            type="password"
+            autocomplete="new-password"
+            class="w-full px-4 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Minimum 6 characters">
+
+        </div>
+
+
+        <!-- ACTIVE -->
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+
+          <div>
+
+            <p class="font-semibold text-sm">
+              Account Status
+            </p>
+
+            <p class="text-xs text-slate-500">
+              Allow this user to login.
+            </p>
+
+          </div>
+
+
+          <label class="relative inline-flex items-center cursor-pointer">
+
+            <input
+              id="userActive"
+              type="checkbox"
+              class="sr-only peer"
+              checked>
+
+            <div class="w-11 h-6 bg-slate-300 peer-focus:ring-2 peer-focus:ring-orange-300 rounded-full peer peer-checked:bg-orange-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:translate-x-full">
+            </div>
+
+          </label>
+
+        </div>
+
+
+        <!-- ERROR -->
+        <div
+          id="formError"
+          class="hidden p-3 rounded-xl bg-red-50 text-red-700 text-sm">
+        </div>
+
+
+        <!-- BUTTONS -->
+        <div class="flex justify-end gap-3 pt-2">
+
+          <button
+            onclick="closeUserModal()"
+            class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 font-semibold">
+
+            Cancel
+
+          </button>
+
+
+          <button
+            id="saveUserButton"
+            onclick="saveUser()"
+            class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold">
+
+            <i class="fa-solid fa-floppy-disk mr-2"></i>
+
+            Save User
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+<script>
+
+  // =====================================================
+  // SESSION TOKEN
+  // =====================================================
+
+  let authToken =
+    sessionStorage.getItem('ASA_AUTH_TOKEN') ||
+    new URLSearchParams(window.location.search).get('token');
+
+  if (authToken) {
+    sessionStorage.setItem('ASA_AUTH_TOKEN', authToken);
+  }
+
+  let currentUser = null;
+
+  let editingRow = null;
+
+
+  // =====================================================
+  // INITIALIZE
+  // =====================================================
+
+  document.addEventListener('DOMContentLoaded', function() {
+
+    if (!authToken) {
+
+      document.body.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center">
+
+          <div class="text-center">
+
+            <i class="fa-solid fa-lock text-4xl text-red-500 mb-4"></i>
+
+            <h2 class="text-xl font-bold">
+              Authentication Required
+            </h2>
+
+            <p class="text-slate-500 mt-2">
+              Please login to access Administration.
+            </p>
+
+          </div>
+
+        </div>
+      `;
+
+      return;
+
+    }
+
+
+    google.script.run
+      .withSuccessHandler(function(user) {
+
+        if (!user || user.role !== 'ADMIN') {
+
+          document.body.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center">
+
+              <div class="text-center">
+
+                <i class="fa-solid fa-ban text-4xl text-red-500 mb-4"></i>
+
+                <h2 class="text-xl font-bold">
+                  Access Denied
+                </h2>
+
+                <p class="text-slate-500 mt-2">
+                  Administrator privileges are required.
+                </p>
+
+              </div>
+
+            </div>
+          `;
+
+          return;
+
+        }
+
+
+        currentUser = user;
+
+        document.getElementById('loggedUserName').textContent =
+          user.name || user.username;
+
+        document.getElementById('loggedUserRole').textContent =
+          user.role;
+
+
+        loadUsers();
+
+      })
+      .withFailureHandler(function(error) {
+
+        showError(
+          error.message || 'Unable to verify session.'
+        );
+
+      })
+      .getLoggedInUser(authToken);
+
+  });
+
+
+  // =====================================================
+  // LOAD USERS
+  // =====================================================
+
+  function loadUsers() {
+
+    google.script.run
+
+      .withSuccessHandler(function(users) {
+
+        renderUsers(users || []);
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        document.getElementById('usersTable').innerHTML = `
+          <tr>
+            <td colspan="6"
+                class="px-6 py-12 text-center text-red-500">
+
+              <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+
+              ${escapeHtml(error.message || 'Unable to load users.')}
+
+            </td>
+          </tr>
+        `;
+
+      })
+
+      .getAdminUsers(authToken);
+
+  }
+
+
+  // =====================================================
+  // RENDER USERS
+  // =====================================================
+
+  function renderUsers(users) {
+
+    let active = 0;
+
+    let disabled = 0;
+
+
+    users.forEach(function(user) {
+
+      if (user.active) {
+
+        active++;
+
+      } else {
+
+        disabled++;
+
+      }
+
+    });
+
+
+    document.getElementById('usersTotal').textContent =
+      users.length;
+
+    document.getElementById('usersActive').textContent =
+      active;
+
+    document.getElementById('usersDisabled').textContent =
+      disabled;
+
+
+    const table =
+      document.getElementById('usersTable');
+
+
+    if (!users.length) {
+
+      table.innerHTML = `
+        <tr>
+
+          <td
+            colspan="6"
+            class="px-6 py-12 text-center text-slate-400">
+
+            No users found.
+
+          </td>
+
+        </tr>
+      `;
+
+      return;
+
+    }
+
+
+    table.innerHTML = users.map(function(user) {
+
+      const roleClass = {
+
+        ADMIN:
+          'bg-red-100 text-red-700',
+
+        MANAGER:
+          'bg-purple-100 text-purple-700',
+
+        ENCODER:
+          'bg-blue-100 text-blue-700',
+
+        VIEWER:
+          'bg-slate-100 text-slate-700'
+
+      }[user.role] || 'bg-slate-100 text-slate-700';
+
+
+      const statusClass =
+        user.active
+          ? 'bg-green-100 text-green-700'
+          : 'bg-red-100 text-red-700';
+
+
+      const statusText =
+        user.active
+          ? 'Active'
+          : 'Disabled';
+
+
+      return `
+
+        <tr class="border-b border-slate-100 hover:bg-slate-50">
+
+          <td class="px-6 py-4 font-semibold">
+            ${escapeHtml(user.username)}
+          </td>
+
+          <td class="px-6 py-4">
+            ${escapeHtml(user.name)}
+          </td>
+
+          <td class="px-6 py-4">
+
+            <span class="role-badge ${roleClass}">
+              ${escapeHtml(user.role)}
+            </span>
+
+          </td>
+
+          <td class="px-6 py-4">
+
+            <span class="status-badge ${statusClass}">
+
+              <i class="fa-solid fa-circle text-[7px] mr-1"></i>
+
+              ${statusText}
+
+            </span>
+
+          </td>
+
+          <td class="px-6 py-4 text-slate-500 text-sm">
+
+            ${escapeHtml(user.lastLogin || 'Never')}
+
+          </td>
+
+          <td class="px-6 py-4">
+
+            <div class="flex justify-end gap-2">
+
+
+              <button
+                onclick='editUser(${JSON.stringify(user)})'
+                title="Edit"
+                class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+
+                <i class="fa-solid fa-pen"></i>
+
+              </button>
+
+
+              <button
+                onclick="toggleUser(${user.row}, ${!user.active})"
+                title="${user.active ? 'Disable' : 'Enable'}"
+                class="w-9 h-9 rounded-lg ${user.active ? 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}">
+
+                <i class="fa-solid ${user.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+
+              </button>
+
+
+              ${
+                user.username.toLowerCase() !== 'admin'
+                ? `
+
+                  <button
+                    onclick="deleteUser(${user.row}, '${escapeJs(user.username)}')"
+                    title="Delete"
+                    class="w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+
+                    <i class="fa-solid fa-trash"></i>
+
+                  </button>
+
+                `
+                : ''
+
+              }
+
+            </div>
+
+          </td>
+
+        </tr>
+
+      `;
+
+    }).join('');
+
+  }
+
+
+  // =====================================================
+  // ADD USER
+  // =====================================================
+
+  function openAddUserModal() {
+
+    editingRow = null;
+
+    document.getElementById('modalTitle').textContent =
+      'Add User';
+
+    document.getElementById('passwordHint').textContent =
+      '(required)';
+
+    document.getElementById('userUsername').value = '';
+
+    document.getElementById('userName').value = '';
+
+    document.getElementById('userRole').value =
+      'VIEWER';
+
+    document.getElementById('userPassword').value = '';
+
+    document.getElementById('userActive').checked =
+      true;
+
+    document.getElementById('formError').classList.add('hidden');
+
+    document.getElementById('userModal').classList.remove('hidden');
+
+  }
+
+
+  // =====================================================
+  // EDIT USER
+  // =====================================================
+
+  function editUser(user) {
+
+    editingRow = user.row;
+
+    document.getElementById('modalTitle').textContent =
+      'Edit User';
+
+    document.getElementById('passwordHint').textContent =
+      '(leave blank to keep current password)';
+
+    document.getElementById('userUsername').value =
+      user.username;
+
+    document.getElementById('userName').value =
+      user.name;
+
+    document.getElementById('userRole').value =
+      user.role;
+
+    document.getElementById('userPassword').value =
+      '';
+
+    document.getElementById('userActive').checked =
+      user.active;
+
+    document.getElementById('formError').classList.add('hidden');
+
+    document.getElementById('userModal').classList.remove('hidden');
+
+  }
+
+
+  // =====================================================
+  // CLOSE MODAL
+  // =====================================================
+
+  function closeUserModal() {
+
+    document.getElementById('userModal')
+      .classList.add('hidden');
+
+  }
+
+
+  // =====================================================
+  // SAVE USER
+  // =====================================================
+
+  function saveUser() {
+
+    const username =
+      document.getElementById('userUsername').value.trim();
+
+    const name =
+      document.getElementById('userName').value.trim();
+
+    const role =
+      document.getElementById('userRole').value;
+
+    const password =
+      document.getElementById('userPassword').value;
+
+    const active =
+      document.getElementById('userActive').checked;
+
+
+    const errorBox =
+      document.getElementById('formError');
+
+
+    errorBox.classList.add('hidden');
+
+
+    if (!username) {
+
+      showFormError('Username is required.');
+
+      return;
+
+    }
+
+
+    if (!editingRow && password.length < 6) {
+
+      showFormError(
+        'Password must be at least 6 characters.'
+      );
+
+      return;
+
+    }
+
+
+    const button =
+      document.getElementById('saveUserButton');
+
+    button.disabled = true;
+
+    button.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Saving...';
+
+
+    google.script.run
+
+      .withSuccessHandler(function(result) {
+
+        button.disabled = false;
+
+        button.innerHTML =
+          '<i class="fa-solid fa-floppy-disk mr-2"></i>Save User';
+
+
+        closeUserModal();
+
+        loadUsers();
+
+
+        showToast(
+          result.message || 'User saved successfully.'
+        );
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        button.disabled = false;
+
+        button.innerHTML =
+          '<i class="fa-solid fa-floppy-disk mr-2"></i>Save User';
+
+
+        showFormError(
+          error.message || 'Unable to save user.'
+        );
+
+      })
+
+      .saveAdminUser(
+
+        authToken,
+
+        {
+
+          username: username,
+
+          name: name,
+
+          role: role,
+
+          password: password,
+
+          active: active
+
+        }
+
+      );
+
+  }
+
+
+  // =====================================================
+  // ENABLE / DISABLE
+  // =====================================================
+
+  function toggleUser(row, active) {
+
+    const action =
+      active ? 'enable' : 'disable';
+
+
+    if (!confirm(
+      'Are you sure you want to ' +
+      action +
+      ' this user?'
+    )) {
+
+      return;
+
+    }
+
+
+    google.script.run
+
+      .withSuccessHandler(function() {
+
+        loadUsers();
+
+        showToast(
+          'User ' +
+          (active ? 'enabled' : 'disabled') +
+          ' successfully.'
+        );
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        alert(
+          error.message ||
+          'Unable to change user status.'
+        );
+
+      })
+
+      .setUserStatus(
+        authToken,
+        row,
+        active
+      );
+
+  }
+
+
+  // =====================================================
+  // DELETE USER
+  // =====================================================
+
+  function deleteUser(row, username) {
+
+    if (!confirm(
+      'Delete user "' +
+      username +
+      '"?\n\nThis action cannot be undone.'
+    )) {
+
+      return;
+
+    }
+
+
+    google.script.run
+
+      .withSuccessHandler(function() {
+
+        loadUsers();
+
+        showToast(
+          'User deleted successfully.'
+        );
+
+      })
+
+      .withFailureHandler(function(error) {
+
+        alert(
+          error.message ||
+          'Unable to delete user.'
+        );
+
+      })
+
+      .deleteAdminUser(
+        authToken,
+        row
+      );
+
+  }
+
+
+  // =====================================================
+  // FORM ERROR
+  // =====================================================
+
+  function showFormError(message) {
+
+    const box =
+      document.getElementById('formError');
+
+    box.textContent =
+      message;
+
+    box.classList.remove('hidden');
+
+  }
+
+
+  // =====================================================
+  // TOAST
+  // =====================================================
+
+  function showToast(message) {
+
+    const toast =
+      document.createElement('div');
+
+    toast.className =
+      'fixed bottom-6 right-6 z-[100] bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-semibold';
+
+    toast.innerHTML =
+      '<i class="fa-solid fa-circle-check text-green-400 mr-2"></i>' +
+      escapeHtml(message);
+
+
+    document.body.appendChild(toast);
+
+
+    setTimeout(function() {
+
+      toast.remove();
+
+    }, 3000);
+
+  }
+
+
+  // =====================================================
+  // ERROR
+  // =====================================================
+
+  function showError(message) {
+
+    alert(message);
+
+  }
+
+
+  // =====================================================
+  // HTML ESCAPE
+  // =====================================================
+
+  function escapeHtml(value) {
+
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+  }
+
+
+  function escapeJs(value) {
+
+    return String(value || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+
+  }
+
+</script>
+
+</body>
+</html>
