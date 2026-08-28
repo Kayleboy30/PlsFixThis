@@ -1,13 +1,7 @@
 /**
  * ============================================================================
- * MAIN CONTROLLER & WEB APP UI (Main.gs)
+ * MAIN CONTROLLER & WEB APP (Main.gs)
  * ============================================================================
- * Handles:
- * - doGet() Web App Router
- * - RBAC & User Management (Admin System)
- * - Division Budget Backend Handlers
- * - getDashboardData() Aggregator (combines Incoming, Outgoing, Directories)
- * - Single-Page Application (HTML / Tailwind CSS / JS)
  */
 
 function doGet() {
@@ -107,7 +101,6 @@ function loginUser(username, password) {
       return { success: false, message: 'Please enter both username and password.' };
     }
 
-    // Admin auto-recovery check
     if (cleanUser === 'admin') {
       let adminRow = -1;
       let existingPass = '';
@@ -150,37 +143,48 @@ function loginUser(username, password) {
         }
       }
 
-      if (dbUser === cleanUser && dbPass === cleanPass) {
-        const rawStatus = map.status >= 0 ? r[map.status] : true;
-        const isActive = rawStatus === true || String(rawStatus).toLowerCase() === 'true' || String(rawStatus).toLowerCase() === 'active' || String(rawStatus).trim() === '';
-        
-        if (!isActive && rawStatus !== undefined && String(rawStatus).toLowerCase() === 'false') {
-          return { success: false, message: 'This account has been disabled. Please contact an administrator.' };
+      if (dbUser === cleanUser) {
+        if (!dbPass) {
+          for (let c = 0; c < r.length; c++) {
+            if (String(r[c] || '').trim() === cleanPass) {
+              dbPass = cleanPass;
+              break;
+            }
+          }
         }
 
-        let role = map.role >= 0 ? String(r[map.role] || '').trim().toUpperCase() : 'ENCODER';
-        let fullName = map.fullName >= 0 ? String(r[map.fullName] || '').trim() : (cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1));
-        const userId = map.userId >= 0 && r[map.userId] ? String(r[map.userId]) : ('USR-' + i);
-
-        const token = Utilities.getUuid();
-        const userObj = {
-          userId: userId,
-          fullName: fullName,
-          username: cleanUser,
-          role: role,
-          email: map.email >= 0 && r[map.email] ? String(r[map.email]) : ''
-        };
-
-        CacheService.getScriptCache().put('sess_' + token, JSON.stringify(userObj), 43200);
-
-        try {
-          if (map.lastLogin >= 0) {
-            const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'GMT+8', 'yyyy-MM-dd HH:mm:ss');
-            sheet.getRange(i + 1, map.lastLogin + 1).setValue(nowStr);
+        if (dbPass === cleanPass) {
+          const rawStatus = map.status >= 0 ? r[map.status] : true;
+          const isActive = rawStatus === true || String(rawStatus).toLowerCase() === 'true' || String(rawStatus).toLowerCase() === 'active' || String(rawStatus).trim() === '';
+          
+          if (!isActive && rawStatus !== undefined && String(rawStatus).toLowerCase() === 'false') {
+            return { success: false, message: 'This account has been disabled. Please contact an administrator.' };
           }
-        } catch (e) {}
 
-        return { success: true, user: userObj, token: token };
+          let role = map.role >= 0 ? String(r[map.role] || '').trim().toUpperCase() : 'ENCODER';
+          let fullName = map.fullName >= 0 ? String(r[map.fullName] || '').trim() : (cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1));
+          const userId = map.userId >= 0 && r[map.userId] ? String(r[map.userId]) : ('USR-' + i);
+
+          const token = Utilities.getUuid();
+          const userObj = {
+            userId: userId,
+            fullName: fullName,
+            username: cleanUser,
+            role: role,
+            email: map.email >= 0 && r[map.email] ? String(r[map.email]) : ''
+          };
+
+          CacheService.getScriptCache().put('sess_' + token, JSON.stringify(userObj), 43200);
+
+          try {
+            if (map.lastLogin >= 0) {
+              const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'GMT+8', 'yyyy-MM-dd HH:mm:ss');
+              sheet.getRange(i + 1, map.lastLogin + 1).setValue(nowStr);
+            }
+          } catch (e) {}
+
+          return { success: true, user: userObj, token: token };
+        }
       }
     }
 
@@ -212,6 +216,10 @@ function requireRole_(token, allowedRoles) {
   }
   return user;
 }
+
+// =====================================================
+// ADMIN USER MANAGEMENT
+// =====================================================
 
 function getAdminUserStats(token) {
   requireRole_(token, ['ADMIN']);
@@ -329,7 +337,7 @@ function toggleUserStatus(token, userId, isActive) {
 }
 
 // =====================================================
-// DASHBOARD AGGREGATOR & DELEGATION TO SEPARATE GS
+// DASHBOARD AGGREGATOR & DELEGATION
 // =====================================================
 
 const DEFAULT_MATERIAL_COLUMNS = [
@@ -361,13 +369,12 @@ function getDashboardData() {
     let supplierData = { supplierList: [] };
     let divisionBudget = { rows: [], divisions: [] };
 
-    // Safely calls functions defined in Incoming.gs, Outgoing.gs, etc.
-    try { if (typeof fetchIncomingData === 'function') incoming = fetchIncomingData() || incoming; } catch (e) { Logger.log('incoming error: ' + e); }
-    try { if (typeof fetchOutgoingData === 'function') outgoing = fetchOutgoingData() || outgoing; } catch (e) { Logger.log('outgoing error: ' + e); }
-    try { if (typeof fetchRegionDirectory === 'function') regionData = fetchRegionDirectory() || regionData; } catch (e) { Logger.log('region error: ' + e); }
-    try { if (typeof fetchAvpDatabase === 'function') avpData = fetchAvpDatabase() || avpData; } catch (e) { Logger.log('avp error: ' + e); }
-    try { if (typeof fetchSupplierDatabase === 'function') supplierData = fetchSupplierDatabase() || supplierData; } catch (e) { Logger.log('supplier error: ' + e); }
-    try { if (typeof fetchDivisionBudgetData === 'function') divisionBudget = fetchDivisionBudgetData() || divisionBudget; } catch (e) { Logger.log('div budget error: ' + e); }
+    try { if (typeof fetchIncomingData === 'function') incoming = fetchIncomingData() || incoming; } catch (e) { Logger.log('incoming: ' + e); }
+    try { if (typeof fetchOutgoingData === 'function') outgoing = fetchOutgoingData() || outgoing; } catch (e) { Logger.log('outgoing: ' + e); }
+    try { if (typeof fetchRegionDirectory === 'function') regionData = fetchRegionDirectory() || regionData; } catch (e) { Logger.log('region: ' + e); }
+    try { if (typeof fetchAvpDatabase === 'function') avpData = fetchAvpDatabase() || avpData; } catch (e) { Logger.log('avp: ' + e); }
+    try { if (typeof fetchSupplierDatabase === 'function') supplierData = fetchSupplierDatabase() || supplierData; } catch (e) { Logger.log('supplier: ' + e); }
+    try { if (typeof fetchDivisionBudgetData === 'function') divisionBudget = fetchDivisionBudgetData() || divisionBudget; } catch (e) { Logger.log('div budget: ' + e); }
 
     const monthlyData = {};
     const inMonthly = incoming.monthlyIncoming || {};
@@ -456,19 +463,18 @@ function getDashboardData() {
   }
 }
 
-// Router for transactions into your Incoming.gs and Outgoing.gs
 function recordTransaction(token, type, formData) {
   requireRole_(token, ['ADMIN', 'ENCODER']);
   if (type === 'INCOMING' && typeof recordIncoming === 'function') return recordIncoming(formData);
   if (type === 'OUTGOING' && typeof recordOutgoing === 'function') return recordOutgoing(formData);
-  throw new Error('Handler function for ' + type + ' not found in project.');
+  throw new Error('Handler for ' + type + ' not found in Incoming/Outgoing .gs files.');
 }
 
 function updateTransaction(token, type, rowIndex, formData) {
   requireRole_(token, ['ADMIN', 'ENCODER']);
   if (type === 'INCOMING' && typeof updateIncoming === 'function') return updateIncoming(rowIndex, formData);
   if (type === 'OUTGOING' && typeof updateOutgoing === 'function') return updateOutgoing(rowIndex, formData);
-  throw new Error('Update handler for ' + type + ' not found in project.');
+  throw new Error('Update handler for ' + type + ' not found in Incoming/Outgoing .gs files.');
 }
 
 // =====================================================
@@ -581,198 +587,9 @@ function saveDivisionBudgetRow(token, formData) {
   return { success: true };
 }
 
-// ─── CLUSTER & ADDRESS DIRECTORY ───────────────────────────────────────────
-
-function fetchClusterAddressData() {
-  try {
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/18YPh-vQ6EN4P5sLxtVOpYHvWWiEzrXWVCAsKjO21l4s/export?format=csv&gid=1633170149';
-    const response = UrlFetchApp.fetch(csvUrl, { muteHttpExceptions: true });
-    const csvText = response.getContentText();
-    const rows = Utilities.parseCsv(csvText);
-
-    if (!rows || rows.length < 3) return { success: true, data: [] };
-
-    const records = [];
-    let currentAvp = '';
-    let currentDivision = '';
-
-    for (let i = 2; i < rows.length; i++) {
-      const row = rows[i];
-      if (row[0] && row[0].trim() !== '') currentAvp = row[0].trim();
-      if (row[1] && row[1].trim() !== '') currentDivision = row[1].trim();
-
-      const cluster = row[2] ? row[2].trim() : '';
-      const idNum = row[3] ? row[3].trim() : '';
-      const head = row[4] ? row[4].trim() : '';
-      const contact = row[5] ? row[5].trim() : '';
-      const email = row[6] ? row[6].trim() : '';
-      const station = row[7] ? row[7].trim() : '';
-      const address = row[8] ? row[8].trim() : '';
-
-      if (!cluster && !station && !head) continue;
-
-      records.push({
-        avpName: currentAvp || (row[9] ? row[9].trim() : ''),
-        division: currentDivision,
-        cluster: cluster,
-        idNumber: idNum,
-        clusterHead: head,
-        contact: contact,
-        email: email,
-        baseStation: station,
-        completeAddress: address
-      });
-    }
-
-    return { success: true, data: records, count: records.length };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-
-// ─── TIME & ATTENDANCE BACKEND ─────────────────────────────────────────────
-
-function getAttendanceSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Attendance');
-  if (!sheet) {
-    sheet = ss.insertSheet('Attendance');
-    sheet.appendRow(['Log ID', 'Date', 'User ID', 'Employee Name', 'Clock In', 'Clock Out', 'Total Hours', 'Regular Hours', 'Overtime Hours', 'Status', 'Remarks']);
-    sheet.getRange('A1:K1').setFontWeight('bold').setBackground('#f1f5f9');
-  }
-  return sheet;
-}
-
-function fetchAttendanceData(token, filterDate) {
-  try {
-    const sheet = getAttendanceSheet_();
-    const data = sheet.getDataRange().getValues();
-    let currentActiveLog = null;
-    let currentUser = null;
-
-    if (token) {
-      const cached = CacheService.getScriptCache().get('sess_' + token);
-      if (cached) currentUser = JSON.parse(cached);
-    }
-
-    if (data.length <= 1) {
-      return { success: true, logs: [], activeLog: null };
-    }
-
-    const logs = [];
-    for (let i = 1; i < data.length; i++) {
-      const r = data[i];
-      const log = {
-        rowIndex: i + 1,
-        logId: String(r[0] || ''),
-        date: r[1] instanceof Date ? Utilities.formatDate(r[1], Session.getScriptTimeZone() || 'GMT+8', 'yyyy-MM-dd') : String(r[1] || ''),
-        userId: String(r[2] || ''),
-        employeeName: String(r[3] || ''),
-        clockIn: String(r[4] || ''),
-        clockOut: String(r[5] || ''),
-        totalHours: Number(r[6]) || 0,
-        regularHours: Number(r[7]) || 0,
-        overtimeHours: Number(r[8]) || 0,
-        status: String(r[9] || 'Completed'),
-        remarks: String(r[10] || '')
-      };
-
-      if (filterDate && log.date !== filterDate) continue;
-
-      if (currentUser && log.userId === currentUser.userId && (!log.clockOut || log.status === 'Active')) {
-        currentActiveLog = log;
-      }
-      logs.push(log);
-    }
-
-    logs.reverse(); // Latest on top
-    return { success: true, logs: logs, activeLog: currentActiveLog };
-  } catch (err) {
-    return { success: false, error: err.message, logs: [] };
-  }
-}
-
-function recordAttendanceClock(token, action, remarks) {
-  try {
-    const user = requireRole_(token, ['ADMIN', 'ENCODER', 'VIEWER']);
-    const sheet = getAttendanceSheet_();
-    const data = sheet.getDataRange().getValues();
-    const tz = Session.getScriptTimeZone() || 'GMT+8';
-    const now = new Date();
-    const todayStr = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
-    const timeStr = Utilities.formatDate(now, tz, 'hh:mm:ss a');
-
-    let activeRowIndex = -1;
-    let clockInTimeStr = '';
-
-    for (let i = 1; i < data.length; i++) {
-      const r = data[i];
-      const uId = String(r[2] || '');
-      const cOut = String(r[5] || '');
-      const st = String(r[9] || '');
-      if (uId === user.userId && (!cOut || st === 'Active')) {
-        activeRowIndex = i + 1;
-        clockInTimeStr = String(r[4] || '');
-        break;
-      }
-    }
-
-    if (action === 'CLOCK_IN') {
-      if (activeRowIndex > 1) {
-        throw new Error('You already have an active Clock In session. Please Clock Out first.');
-      }
-      const logId = 'ATT-' + Utilities.formatString('%05d', data.length);
-      const newRow = [
-        logId,
-        todayStr,
-        user.userId,
-        user.fullName || user.username,
-        timeStr,
-        '', // Clock Out
-        0,  // Total
-        0,  // Regular
-        0,  // OT
-        'Active',
-        remarks || 'Shift started'
-      ];
-      sheet.appendRow(newRow);
-      return { success: true, message: 'Clocked in successfully at ' + timeStr };
-    } else if (action === 'CLOCK_OUT') {
-      if (activeRowIndex <= 1) {
-        throw new Error('No active Clock In session found for your account.');
-      }
-
-      // Compute hours
-      let totalHrs = 0;
-      try {
-        const d1 = new Date(todayStr + ' ' + clockInTimeStr);
-        const d2 = now;
-        const diffMs = Math.max(0, d2.getTime() - d1.getTime());
-        totalHrs = Number((diffMs / 3600000).toFixed(2));
-      } catch (e) {
-        totalHrs = 8.0;
-      }
-
-      const regHrs = Math.min(8.0, totalHrs);
-      const otHrs = Math.max(0, totalHrs - 8.0);
-
-      sheet.getRange(activeRowIndex, 6).setValue(timeStr);
-      sheet.getRange(activeRowIndex, 7).setValue(totalHrs);
-      sheet.getRange(activeRowIndex, 8).setValue(regHrs);
-      sheet.getRange(activeRowIndex, 9).setValue(otHrs);
-      sheet.getRange(activeRowIndex, 10).setValue('Completed');
-      if (remarks) sheet.getRange(activeRowIndex, 11).setValue(remarks);
-
-      return { success: true, message: 'Clocked out successfully at ' + timeStr + '. Total Hours: ' + totalHrs + 'h' };
-    }
-
-    throw new Error('Invalid clock action');
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-
-// ─── CLIENT SPA INTERFACE ──────────────────────────────────────────────────
+// =====================================================
+// WEB APP USER INTERFACE (HTML/CSS/JS)
+// =====================================================
 
 function getHtmlContent() {
   return `<!DOCTYPE html>
@@ -1572,7 +1389,6 @@ function getHtmlContent() {
       </header>
 
       <div class="p-8 space-y-6 max-w-7xl w-full">
-        <!-- USER STATS -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
@@ -1597,7 +1413,6 @@ function getHtmlContent() {
           </div>
         </div>
 
-        <!-- USERS TABLE -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="p-4 border-b flex justify-between items-center bg-slate-50/50">
             <div class="relative w-full max-w-sm">
@@ -1997,7 +1812,6 @@ function getHtmlContent() {
     var clusterDataList = [];
     var shiftTimerInterval = null;
 
-    // Real-time Clock
     setInterval(function() {
       var d = new Date();
       var clk = document.getElementById('liveDigitalClock');
@@ -2005,20 +1819,6 @@ function getHtmlContent() {
       if (clk) clk.innerText = d.toLocaleTimeString();
       if (dt) dt.innerText = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
     }, 1000);
-
-    function parseDateToTime(d) {
-      if (!d) return 0;
-      if (d instanceof Date) return d.getTime();
-      var str = String(d).trim();
-      if (!str || str === '-') return 0;
-
-      if (/^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}/.test(str)) {
-        var parts = str.split(/[-/]/);
-        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getTime();
-      }
-      var t = Date.parse(str);
-      return isNaN(t) ? 0 : t;
-    }
 
     // ── AUTHENTICATION & PERMISSIONS ────────────────────────────────────────
 
@@ -2139,7 +1939,7 @@ function getHtmlContent() {
       renderDivisionBudgetTable();
     }
 
-    // ── SIDEBAR VIEW SWITCHING ──────────────────────────────────────────────
+    // ── SIDEBAR SWITCHING ───────────────────────────────────────────────────
     var VIEW_MAPPING = {
       dashboard:      { viewId: 'viewDashboard',      navId: 'navDashboard' },
       inventory:      { viewId: 'viewInventory',      navId: 'navInventory' },
@@ -2218,7 +2018,7 @@ function getHtmlContent() {
     function loadDashboard() {
       google.script.run
         .withSuccessHandler(renderDashboard)
-        .withFailureHandler(function(err) { console.warn('Dashboard fetch error: ', err); })
+        .withFailureHandler(function(err) { console.warn('Dashboard fetch warning: ', err); })
         .getDashboardData();
     }
 
@@ -2380,7 +2180,7 @@ function getHtmlContent() {
         openLoginModal();
         return;
       }
-      var rem = prompt('Optional remarks for this shift entry (e.g. Regular Day / On-site):', 'On-site');
+      var rem = prompt('Optional remarks for this shift entry:', 'On-site');
       google.script.run
         .withSuccessHandler(function(res) {
           if (res.success) {
@@ -2397,7 +2197,7 @@ function getHtmlContent() {
     window.handleClockOut = function() {
       if (!currentUser) return;
       if (!confirm('Are you sure you want to Clock Out and conclude your shift?')) return;
-      var rem = prompt('Optional end-of-shift remarks (e.g. Completed deliveries):', '');
+      var rem = prompt('Optional end-of-shift remarks:', '');
       google.script.run
         .withSuccessHandler(function(res) {
           if (res.success) {
@@ -2458,7 +2258,7 @@ function getHtmlContent() {
       '</tr>';
     };
 
-    // ── CLUSTER & ADDRESS FAST DIRECT FETCH ──────────────────────────────────
+    // ── CLUSTER & ADDRESS FAST FETCH ────────────────────────────────────────
 
     window.loadClusterAddressData = function(forceRefresh) {
       if (clusterDataList && clusterDataList.length > 0 && !forceRefresh) {
@@ -2489,7 +2289,6 @@ function getHtmlContent() {
           }
         })
         .catch(function(err) {
-          // Server Fallback
           google.script.run
             .withSuccessHandler(function(res) {
               if (res && res.success && res.data) {
